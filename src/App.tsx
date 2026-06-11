@@ -7,7 +7,7 @@ export default function App() {
     <Router>
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/share/:code" element={<ShareView />} />
+        <Route path="/share" element={<ShareView />} />
       </Routes>
     </Router>
   );

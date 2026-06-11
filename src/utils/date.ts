@@ -73,6 +73,18 @@ export function isToday(dateStr: string): boolean {
   return today === target;
 }
 
+export function isOverlappingDate(
+  startTime: string,
+  endTime: string | null | undefined,
+  dateStr: string = format(new Date(), "yyyy-MM-dd")
+): boolean {
+  const dayStart = new Date(`${dateStr}T00:00:00`).getTime();
+  const dayEnd = new Date(`${dateStr}T23:59:59.999`).getTime();
+  const s = new Date(startTime).getTime();
+  const e = endTime ? new Date(endTime).getTime() : Date.now();
+  return s <= dayEnd && e >= dayStart;
+}
+
 export function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }

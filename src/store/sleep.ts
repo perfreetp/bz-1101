@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { SleepRecord } from "@/types";
-import { generateId, nowStr, isToday, calculateDuration } from "@/utils/date";
+import { generateId, nowStr, isToday, calculateDuration, isOverlappingDate, todayStr } from "@/utils/date";
 
 interface SleepState {
   sleepRecords: SleepRecord[];
@@ -73,7 +73,9 @@ export const useSleepStore = create<SleepState>()(
 
       getTodaySleeps: (babyId) =>
         get()
-          .sleepRecords.filter((r) => r.babyId === babyId && isToday(r.startTime))
+          .sleepRecords.filter(
+            (r) => r.babyId === babyId && isOverlappingDate(r.startTime, r.endTime, todayStr())
+          )
           .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()),
 
       getTodayTotalMinutes: (babyId) =>

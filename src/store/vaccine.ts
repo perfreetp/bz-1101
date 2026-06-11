@@ -7,10 +7,13 @@ interface VaccineState {
   vaccines: VaccineItem[];
 
   addVaccine: (item: Omit<VaccineItem, "id">) => void;
+  updateVaccine: (id: string, data: Partial<Omit<VaccineItem, "id" | "babyId">>) => void;
   completeVaccine: (id: string) => void;
+  uncompleteVaccine: (id: string) => void;
   deleteVaccine: (id: string) => void;
   getBabyVaccines: (babyId: string) => VaccineItem[];
   getUpcoming: (babyId: string, daysAhead?: number) => VaccineItem[];
+  getPending: (babyId: string) => VaccineItem[];
 }
 
 export const useVaccineStore = create<VaccineState>()(
@@ -33,11 +36,21 @@ export const useVaccineStore = create<VaccineState>()(
           vaccines: [...state.vaccines, { ...item, id: generateId() }],
         })),
 
+      updateVaccine: (id, data) =>
+        set((state) => ({
+          vaccines: state.vaccines.map((v) => (v.id === id ? { ...v, ...data } : v)),
+        })),
+
       completeVaccine: (id) =>
         set((state) => ({
           vaccines: state.vaccines.map((v) =>
             v.id === id ? { ...v, completedDate: new Date().toISOString().split("T")[0] } : v
           ),
+        })),
+
+      uncompleteVaccine: (id) =>
+        set((state) => ({
+          vaccines: state.vaccines.map((v) => (v.id === id ? { ...v, completedDate: null } : v)),
         })),
 
       deleteVaccine: (id) =>
@@ -59,6 +72,11 @@ export const useVaccineStore = create<VaccineState>()(
             (v) => !v.completedDate && new Date(v.plannedDate) <= future && new Date(v.plannedDate) >= now
           );
       },
+
+      getPending: (babyId) =>
+        get()
+          .getBabyVaccines(babyId)
+          .filter((v) => !v.completedDate),
     }),
     { name: "vaccine-store" }
   )

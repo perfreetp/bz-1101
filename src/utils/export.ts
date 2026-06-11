@@ -58,9 +58,16 @@ export function exportDiaryToText(data: DiaryData): string {
   if (data.todos.length === 0) {
     lines.push("  暂无待办");
   } else {
+    const categoryNames: Record<string, string> = {
+      vaccine: "疫苗", checkup: "体检", shopping: "购物", other: "其他",
+    };
+    const done = data.todos.filter((t) => t.completed).length;
+    const total = data.todos.length;
+    lines.push(`  进度：${done}/${total} 已完成`);
     data.todos.forEach((t, i) => {
-      const status = t.completed ? "✅" : "⬜";
-      lines.push(`  ${status} ${i + 1}. ${t.title}`);
+      const status = t.completed ? "✅ 已完成" : "⬜ 未完成";
+      const cat = categoryNames[t.category] || t.category;
+      lines.push(`  ${status} [${cat}] ${i + 1}. ${t.title}`);
     });
   }
   lines.push("");

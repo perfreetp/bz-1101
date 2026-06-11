@@ -24,6 +24,7 @@ import { useBabyStore } from "@/store/baby";
 import { useGrowthStore } from "@/store/growth";
 import { useFeedingStore } from "@/store/feeding";
 import { useSleepStore } from "@/store/sleep";
+import { useTodoStore } from "@/store/todo";
 import { exportDiaryToText, downloadText } from "@/utils/export";
 import { formatDate, todayStr } from "@/utils/date";
 import { cn } from "@/lib/utils";
@@ -33,6 +34,7 @@ export default function DataSummary() {
   const { getBabyGrowth, getLatestGrowth, addGrowth, deleteGrowth } = useGrowthStore();
   const { getTodayFeedings, getTodayDiapers } = useFeedingStore();
   const { getTodaySleeps, getTodayTotalMinutes } = useSleepStore();
+  const { getTodayTodos } = useTodoStore();
 
   const [showAddGrowth, setShowAddGrowth] = useState(false);
   const [date, setDate] = useState(todayStr());
@@ -53,6 +55,7 @@ export default function DataSummary() {
   const todayFeedings = currentBabyId ? getTodayFeedings(currentBabyId) : [];
   const todayDiapers = currentBabyId ? getTodayDiapers(currentBabyId) : [];
   const todaySleeps = currentBabyId ? getTodaySleeps(currentBabyId) : [];
+  const todayTodos = currentBabyId ? getTodayTodos(currentBabyId) : [];
   const sleepMins = currentBabyId ? getTodayTotalMinutes(currentBabyId) : 0;
 
   function handleAddGrowth(e: React.FormEvent) {
@@ -83,7 +86,7 @@ export default function DataSummary() {
       sleeps: todaySleeps.map((s) => ({
         startTime: s.startTime, endTime: s.endTime, duration: s.duration, note: s.note,
       })),
-      todos: [],
+      todos: todayTodos.map((t) => ({ title: t.title, completed: t.completed, category: t.category })),
       growth: latest ? { height: latest.height, weight: latest.weight, note: latest.note } : null,
     });
     const filename = `${baby.name}_育儿日记_${todayStr()}.txt`;

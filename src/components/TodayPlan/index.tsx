@@ -3,9 +3,9 @@ import { Plus, Check, Trash2, Syringe, Stethoscope, ShoppingBag, Sparkles, Calen
 import Card from "@/components/common/Card";
 import Button from "@/components/common/Button";
 import Modal from "@/components/common/Modal";
+import VaccineManager from "@/components/VaccineManager";
 import { useBabyStore } from "@/store/baby";
 import { useTodoStore } from "@/store/todo";
-import { useVaccineStore } from "@/store/vaccine";
 import { useFeedingStore } from "@/store/feeding";
 import { useSleepStore } from "@/store/sleep";
 import { cn } from "@/lib/utils";
@@ -31,7 +31,6 @@ export default function TodayPlan() {
   const { getTodayTodos, toggleTodo, addTodo, deleteTodo } = useTodoStore();
   const { getTodayFeedings, getTodayDiapers } = useFeedingStore();
   const { getTodaySleeps } = useSleepStore();
-  const { getUpcoming } = useVaccineStore();
 
   const [showAdd, setShowAdd] = useState(false);
   const [newTitle, setNewTitle] = useState("");
@@ -41,7 +40,6 @@ export default function TodayPlan() {
   const feedings = currentBabyId ? getTodayFeedings(currentBabyId) : [];
   const diapers = currentBabyId ? getTodayDiapers(currentBabyId) : [];
   const sleeps = currentBabyId ? getTodaySleeps(currentBabyId) : [];
-  const upcomingVaccines = currentBabyId ? getUpcoming(currentBabyId) : [];
   const baby = getCurrentBaby();
 
   function handleAddTodo(e: React.FormEvent) {
@@ -61,23 +59,7 @@ export default function TodayPlan() {
 
   return (
     <div className="space-y-5">
-      {baby && upcomingVaccines.length > 0 && (
-        <Card className="bg-gradient-to-r from-primary-50 to-mint-50 dark:from-primary-900/20 dark:to-mint-900/20 border-0">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-400/20 flex items-center justify-center animate-pulse-soft">
-              <Syringe size={20} className="text-primary-500" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-primary-700 dark:text-primary-300">
-                即将到来：{upcomingVaccines[0].name}
-              </p>
-              <p className="text-xs text-gray-500 dark:text-night-100 mt-0.5">
-                计划日期：{upcomingVaccines[0].plannedDate}
-              </p>
-            </div>
-          </div>
-        </Card>
-      )}
+      <VaccineManager />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard label="今日喂奶" value={feedings.filter((f) => f.type === "milk").length.toString()} unit="次" color="pink" />

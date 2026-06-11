@@ -16,6 +16,16 @@ export function formatTime(date: Date | string): string {
   return format(d, "HH:mm");
 }
 
+export function formatDateTimeLocal(date: Date | string): string {
+  const d = typeof date === "string" ? parseISO(date) : date;
+  return format(d, "yyyy-MM-dd'T'HH:mm");
+}
+
+export function formatDateTimeWithDate(date: Date | string): string {
+  const d = typeof date === "string" ? parseISO(date) : date;
+  return format(d, "MM-dd HH:mm");
+}
+
 export function getAgeMonths(birthday: string): number {
   return differenceInMonths(new Date(), parseISO(birthday));
 }

@@ -31,7 +31,7 @@ export default function FamilyShare() {
   const growth = currentBabyId ? getLatestGrowth(currentBabyId) : null;
 
   const code = shareCode || generateShareCode();
-  const shareUrl = `${window.location.origin}${window.location.pathname}?share=${code}`;
+  const shareUrl = `${window.location.origin}${window.location.pathname.replace(/\/$/, "")}/share/${code}`;
 
   async function copyLink() {
     try {

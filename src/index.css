@@ -1,0 +1,95 @@
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=ZCOOL+KuaiLe&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: "Noto Sans SC", -apple-system, BlinkMacSystemFont, sans-serif;
+  line-height: 1.6;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #FFFAF0 0%, #FFF5F7 100%);
+  transition: background 0.3s ease;
+}
+
+.dark body {
+  background: linear-gradient(135deg, #0F0F1A 0%, #1A1A2E 100%);
+}
+
+@layer components {
+  .card-base {
+    @apply bg-white dark:bg-night-800 rounded-2xl shadow-card dark:shadow-card-dark p-5 transition-all duration-300;
+  }
+
+  .card-hover {
+    @apply hover:shadow-soft hover:-translate-y-0.5 cursor-pointer;
+  }
+
+  .btn-primary {
+    @apply bg-primary-400 hover:bg-primary-500 text-white font-medium rounded-full px-5 py-2.5 transition-all duration-200 hover:shadow-soft active:scale-95;
+  }
+
+  .btn-secondary {
+    @apply bg-primary-50 dark:bg-night-800 hover:bg-primary-100 dark:hover:bg-night-200/10 text-primary-600 dark:text-primary-300 font-medium rounded-full px-5 py-2.5 transition-all duration-200 active:scale-95 border border-primary-100 dark:border-night-200/20;
+  }
+
+  .btn-ghost {
+    @apply hover:bg-primary-50 dark:hover:bg-night-200/10 text-primary-600 dark:text-primary-300 font-medium rounded-full px-4 py-2 transition-all duration-200 active:scale-95;
+  }
+
+  .input-base {
+    @apply w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-night-200/30 bg-white dark:bg-night-900 text-gray-800 dark:text-night-50 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-300 dark:focus:ring-primary-500 focus:border-transparent transition-all duration-200;
+  }
+
+  .chip {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium transition-colors duration-200;
+  }
+
+  .chip-active {
+    @apply bg-primary-400 text-white;
+  }
+
+  .chip-inactive {
+    @apply bg-primary-50 dark:bg-night-800 text-primary-600 dark:text-primary-300 hover:bg-primary-100 dark:hover:bg-night-200/10;
+  }
+
+  .title-cute {
+    @apply font-cute text-2xl text-primary-500 dark:text-primary-300;
+  }
+
+  .section-title {
+    @apply flex items-center gap-2 text-lg font-bold text-gray-800 dark:text-night-50 mb-4;
+  }
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #FFC9D6;
+  border-radius: 3px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #6E6E91;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #FFA3BA;
+}

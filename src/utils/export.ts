@@ -1,6 +1,14 @@
 import { formatDate, formatDateTime, formatDuration } from "./date";
 import type { PeriodSummary } from "./stats";
 
+function formatDiff(value: number | null | undefined, unit: string): string {
+  if (value === null || value === undefined) return "";
+  if (value === 0) return "（与上期持平）";
+  const sign = value > 0 ? "+" : "";
+  const arrow = value > 0 ? "↑" : "↓";
+  return `（${arrow} ${sign}${value}${unit} vs上期）`;
+}
+
 interface DiaryData {
   babyName: string;
   date: string;
@@ -107,24 +115,24 @@ export function exportPeriodReport(
   lines.push("");
 
   lines.push("【喂养概况】");
-  lines.push(`  平均每日喂奶次数：${summary.avgMilkPerDay} 次`);
+  lines.push(`  平均每日喂奶次数：${summary.avgMilkPerDay} 次${formatDiff(summary.diff?.avgMilkPerDay, "次")}`);
   lines.push(`  喂奶总量：${summary.totalMilkAmount}ml`);
-  lines.push(`  平均每日辅食次数：${summary.avgSolidsPerDay} 次`);
+  lines.push(`  平均每日辅食次数：${summary.avgSolidsPerDay} 次${formatDiff(summary.diff?.avgSolidsPerDay, "次")}`);
   lines.push("");
 
   lines.push("【护理概况】");
-  lines.push(`  平均每日换尿布次数：${summary.avgDiaperPerDay} 次`);
+  lines.push(`  平均每日换尿布次数：${summary.avgDiaperPerDay} 次${formatDiff(summary.diff?.avgDiaperPerDay, "次")}`);
   lines.push("");
 
   lines.push("【睡眠概况】");
-  lines.push(`  平均每日睡眠时长：${formatDuration(summary.avgSleepPerDayMin)}`);
+  lines.push(`  平均每日睡眠时长：${formatDuration(summary.avgSleepPerDayMin)}${formatDiff(summary.diff?.avgSleepPerDayMin, "分钟")}`);
   lines.push(`  总睡眠时长：${formatDuration(summary.totalSleepMin)}`);
   lines.push(`  夜间睡眠总时长：${formatDuration(summary.nightSleepMin)}`);
   lines.push("");
 
   lines.push("【待办概况】");
   lines.push(`  待办完成总数：${summary.completedTodo}/${summary.totalTodo}`);
-  lines.push(`  完成率：${summary.completionRate}%`);
+  lines.push(`  完成率：${summary.completionRate}%${formatDiff(summary.diff?.completionRate, "%")}`);
   lines.push("");
 
   if (summary.growthStart && summary.growthEnd) {

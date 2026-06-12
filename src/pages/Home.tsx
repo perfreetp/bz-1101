@@ -7,6 +7,7 @@ import SupplyList from "@/components/SupplyList";
 import KnowledgeCard from "@/components/KnowledgeCard";
 import FamilyShare from "@/components/FamilyShare";
 import DataSummary from "@/components/DataSummary";
+import HistoryCenter from "@/components/HistoryCenter";
 import { useUiStore } from "@/store/ui";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +28,7 @@ export default function Home() {
           {activeTab === "knowledge" && <KnowledgeCard />}
           {activeTab === "share" && <FamilyShare />}
           {activeTab === "summary" && <DataSummary />}
+          {activeTab === "history" && <HistoryCenter />}
         </div>
       </main>
 

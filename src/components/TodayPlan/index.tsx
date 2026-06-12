@@ -32,7 +32,7 @@ export default function TodayPlan() {
   const { getTodayTodos, toggleTodo, addTodo, deleteTodo, todos: allTodos } = useTodoStore();
   const { getTodayFeedings, getTodayDiapers } = useFeedingStore();
   const { getTodaySleeps } = useSleepStore();
-  const { getUpcoming, completeVaccine } = useVaccineStore();
+  const { getUpcoming, completeVaccine, getBabyVaccines } = useVaccineStore();
 
   const [showAdd, setShowAdd] = useState(false);
   const [newTitle, setNewTitle] = useState("");
@@ -44,11 +44,26 @@ export default function TodayPlan() {
   const sleeps = currentBabyId ? getTodaySleeps(currentBabyId) : [];
   const baby = getCurrentBaby();
 
+  const pendingVaccines = useMemo(() => {
+    if (!currentBabyId) return [];
+    const today = todayStr();
+    const allVaccines = getBabyVaccines(currentBabyId);
+    return allVaccines.filter(
+      (v) =>
+        !v.completedDate &&
+        v.plannedDate <= today &&
+        !allTodos.some((t) => t.babyId === currentBabyId && t.vaccineId === v.id && t.completed)
+    );
+  }, [currentBabyId, getBabyVaccines, allTodos]);
+
   const upcomingVaccines = useMemo(() => {
     if (!currentBabyId) return [];
+    const today = todayStr();
     const upcoming = getUpcoming(currentBabyId, 3);
     return upcoming.filter(
-      (v) => !allTodos.some((t) => t.babyId === currentBabyId && t.vaccineId === v.id)
+      (v) =>
+        v.plannedDate > today &&
+        !allTodos.some((t) => t.babyId === currentBabyId && t.vaccineId === v.id)
     );
   }, [currentBabyId, getUpcoming, allTodos]);
 
@@ -102,10 +117,39 @@ export default function TodayPlan() {
           </Button>
         </div>
 
-        {todayTodos.length === 0 && upcomingVaccines.length === 0 ? (
+        {todayTodos.length === 0 && upcomingVaccines.length === 0 && pendingVaccines.length === 0 ? (
           <p className="text-center text-gray-400 py-6 text-sm">暂无待办，点击上方按钮添加</p>
         ) : (
           <div className="space-y-2">
+            {pendingVaccines.map((v) => {
+              const days = Math.ceil(
+                (new Date(v.plannedDate).getTime() - new Date(todayStr()).getTime()) / (24 * 60 * 60 * 1000)
+              );
+              const CatIcon = v.type === "vaccine" ? Syringe : Stethoscope;
+              return (
+                <div
+                  key={v.id}
+                  className="flex items-center gap-3 p-3 rounded-xl bg-red-50 dark:bg-red-400/10 transition-all"
+                >
+                  <button
+                    onClick={() => handleCompleteVaccine(v)}
+                    className="w-6 h-6 rounded-full border-2 border-red-400 flex items-center justify-center transition-all flex-shrink-0 hover:bg-red-100 dark:hover:bg-red-400/20"
+                    title="点击标记已完成"
+                  >
+                    <Check size={14} strokeWidth={3} className="text-transparent" />
+                  </button>
+                  <CatIcon size={16} className="text-red-500 flex-shrink-0" />
+                  <span className="flex-1 text-sm text-gray-700 dark:text-night-50">
+                    {v.name}
+                  </span>
+                  <span className="text-xs text-red-500 px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-400/20 flex items-center gap-1">
+                    <AlertCircle size={10} />
+                    {days === 0 ? "今日到期" : `过期${Math.abs(days)}天`}
+                  </span>
+                </div>
+              );
+            })}
+
             {upcomingVaccines.map((v) => {
               const days = Math.ceil(
                 (new Date(v.plannedDate).getTime() - Date.now()) / (24 * 60 * 60 * 1000)

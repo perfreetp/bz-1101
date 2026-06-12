@@ -6,6 +6,7 @@ import {
   BookOpen,
   Users,
   BarChart3,
+  Clock,
 } from "lucide-react";
 import { useUiStore } from "@/store/ui";
 import type { ActiveTab } from "@/types";
@@ -19,6 +20,7 @@ const tabs: { id: ActiveTab; label: string; icon: typeof CalendarCheck2 }[] = [
   { id: "knowledge", label: "知识卡片", icon: BookOpen },
   { id: "share", label: "家庭共享", icon: Users },
   { id: "summary", label: "数据汇总", icon: BarChart3 },
+  { id: "history", label: "历史记录", icon: Clock },
 ];
 
 export default function TabNav() {

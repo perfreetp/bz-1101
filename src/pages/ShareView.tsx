@@ -34,6 +34,7 @@ import { decodeShareData, type SharePayload } from "@/utils/share";
 import type { DailyStats } from "@/utils/stats";
 import { cn } from "@/lib/utils";
 import type { TodoItem, GrowthRecord } from "@/types";
+import { useFeedbackStore } from "@/store/feedback";
 
 const categoryIcons: Record<TodoItem["category"], typeof Baby> = {
   vaccine: Syringe,
@@ -120,6 +121,8 @@ export default function ShareView() {
         {mode === "full" && <FullContent payload={payload} />}
         {mode === "growth" && <GrowthContent payload={payload} />}
         {mode === "week7" && <Week7Content payload={payload} />}
+
+        <FamilyFeedbackSection babyId={baby.id} shareDate={payload.date} />
 
         <p className="text-center text-xs text-gray-300 dark:text-night-200 pt-2">
           🔒 只读模式 · 此内容由 {baby.name} 的家长分享 · 无法修改任何数据
@@ -705,5 +708,137 @@ function StatMini({
       <p className="text-base font-bold text-gray-800 dark:text-night-50 mt-0.5">{value}</p>
       {hint && <p className="text-[10px] text-gray-400 mt-0.5">{hint}</p>}
     </div>
+  );
+}
+
+function FamilyFeedbackSection({
+  babyId,
+  shareDate,
+}: {
+  babyId: string;
+  shareDate: string;
+}) {
+  const { addViewed, addNote, getDateFeedbacks } = useFeedbackStore();
+  const feedbacks = useFeedbackStore((s) => s.getDateFeedbacks(babyId, shareDate));
+
+  const [visitorName, setVisitorName] = useState("");
+  const [noteContent, setNoteContent] = useState("");
+  const [viewedNames, setViewedNames] = useState<string[]>([]);
+
+  useEffect(() => {
+    const viewed = feedbacks
+      .filter((f) => f.type === "viewed")
+      .map((f) => f.visitorName);
+    setViewedNames([...new Set(viewed)]);
+  }, [feedbacks]);
+
+  const handleViewed = () => {
+    const name = visitorName.trim();
+    if (!name) return;
+    if (viewedNames.includes(name)) return;
+    addViewed(babyId, name, shareDate);
+  };
+
+  const handleNote = () => {
+    const name = visitorName.trim();
+    const content = noteContent.trim();
+    if (!name || !content) return;
+    addNote(babyId, name, content, shareDate);
+    setNoteContent("");
+  };
+
+  const notes = feedbacks.filter((f) => f.type === "note");
+
+  return (
+    <Card>
+      <h3 className="section-title">
+        <span className="text-primary-500 text-lg">💬</span> 家人反馈
+      </h3>
+
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={visitorName}
+            onChange={(e) => setVisitorName(e.target.value)}
+            placeholder="你的称呼（如：奶奶、爸爸）"
+            className="flex-1 px-3 py-2 rounded-xl border border-primary-200 dark:border-night-200/20 bg-white/70 dark:bg-night-800/50 text-sm text-gray-700 dark:text-night-50 placeholder:text-gray-300 dark:placeholder:text-night-200 focus:outline-none focus:ring-2 focus:ring-primary-300"
+          />
+          <button
+            onClick={handleViewed}
+            disabled={!visitorName.trim() || viewedNames.includes(visitorName.trim())}
+            className={cn(
+              "px-4 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap",
+              !visitorName.trim() || viewedNames.includes(visitorName.trim())
+                ? "bg-gray-100 text-gray-400 dark:bg-night-200/10 dark:text-night-200 cursor-not-allowed"
+                : "bg-primary-500 text-white hover:bg-primary-600 active:bg-primary-700"
+            )}
+          >
+            已查看
+          </button>
+        </div>
+
+        {viewedNames.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-xs text-gray-400">已看：</span>
+            {viewedNames.map((name) => (
+              <span
+                key={name}
+                className="text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-400/10 dark:text-emerald-400"
+              >
+                ✓ {name}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={noteContent}
+            onChange={(e) => setNoteContent(e.target.value)}
+            placeholder="留个言吧…"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleNote();
+            }}
+            className="flex-1 px-3 py-2 rounded-xl border border-primary-200 dark:border-night-200/20 bg-white/70 dark:bg-night-800/50 text-sm text-gray-700 dark:text-night-50 placeholder:text-gray-300 dark:placeholder:text-night-200 focus:outline-none focus:ring-2 focus:ring-primary-300"
+          />
+          <button
+            onClick={handleNote}
+            disabled={!visitorName.trim() || !noteContent.trim()}
+            className={cn(
+              "px-4 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap",
+              !visitorName.trim() || !noteContent.trim()
+                ? "bg-gray-100 text-gray-400 dark:bg-night-200/10 dark:text-night-200 cursor-not-allowed"
+                : "bg-pink-500 text-white hover:bg-pink-600 active:bg-pink-700"
+            )}
+          >
+            留言
+          </button>
+        </div>
+
+        {notes.length > 0 && (
+          <div className="space-y-2 mt-2">
+            <p className="text-xs text-gray-400">最近留言</p>
+            {notes.map((n) => (
+              <div
+                key={n.id}
+                className="p-3 rounded-xl bg-gradient-to-r from-pink-50 to-primary-50 dark:from-pink-400/10 dark:to-primary-400/10"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-medium text-pink-600 dark:text-pink-400">
+                    {n.visitorName}
+                  </span>
+                  <span className="text-[10px] text-gray-400">
+                    {formatDateTime(n.createdAt, "MM-dd HH:mm")}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-700 dark:text-night-50">{n.content}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </Card>
   );
 }

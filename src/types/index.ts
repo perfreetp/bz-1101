@@ -105,10 +105,21 @@ export type ActiveTab =
   | "supply"
   | "knowledge"
   | "share"
-  | "summary";
+  | "summary"
+  | "history";
 
 export interface UiState {
   darkMode: boolean;
   activeTab: ActiveTab;
   shareCode: string | null;
+}
+
+export interface FamilyFeedback {
+  id: string;
+  babyId: string;
+  visitorName: string;
+  type: "viewed" | "note";
+  content: string;
+  shareDate: string;
+  createdAt: string;
 }

@@ -64,12 +64,13 @@ export const useVaccineStore = create<VaccineState>()(
           .sort((a, b) => new Date(a.plannedDate).getTime() - new Date(b.plannedDate).getTime()),
 
       getUpcoming: (babyId, daysAhead = 14) => {
-        const now = new Date();
-        const future = new Date(now.getTime() + daysAhead * 24 * 60 * 60 * 1000);
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+        const future = new Date(todayStart.getTime() + daysAhead * 24 * 60 * 60 * 1000);
         return get()
           .getBabyVaccines(babyId)
           .filter(
-            (v) => !v.completedDate && new Date(v.plannedDate) <= future && new Date(v.plannedDate) >= now
+            (v) => !v.completedDate && new Date(v.plannedDate) <= future
           );
       },
 

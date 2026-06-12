@@ -10,6 +10,7 @@ import {
   TrendingUp,
   Calendar,
   FileText,
+  MessageCircle,
 } from "lucide-react";
 import Card from "@/components/common/Card";
 import Button from "@/components/common/Button";
@@ -20,6 +21,7 @@ import { useFeedingStore } from "@/store/feeding";
 import { useSleepStore } from "@/store/sleep";
 import { useGrowthStore } from "@/store/growth";
 import { useVaccineStore } from "@/store/vaccine";
+import { useFeedbackStore } from "@/store/feedback";
 import { cn } from "@/lib/utils";
 import { formatAge, todayStr, isOverlappingDate, formatDate } from "@/utils/date";
 import { encodeShareData, type ShareMode } from "@/utils/share";
@@ -41,6 +43,7 @@ const shareModes: ShareModeInfo[] = [
 
 export default function FamilyShare() {
   const { currentBabyId, getCurrentBaby } = useBabyStore();
+  const { getBabyFeedbacks } = useFeedbackStore();
   const { getTodayTodos, todos } = useTodoStore();
   const { getTodayFeedings, getTodayDiapers, feedingRecords, diaperRecords } = useFeedingStore();
   const { getBabySleeps, getTodayTotalMinutes, sleepRecords } = useSleepStore();
@@ -53,6 +56,30 @@ export default function FamilyShare() {
 
   const baby = getCurrentBaby();
   const today = todayStr();
+
+  const feedbackGrouped = useMemo(() => {
+    if (!currentBabyId) return { dates: [], totalViewed: 0, totalNotes: 0 };
+    const all = getBabyFeedbacks(currentBabyId);
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const recent = all.filter((f) => new Date(f.createdAt) >= sevenDaysAgo);
+    const viewedSet = new Set(recent.filter((f) => f.type === "viewed").map((f) => f.visitorName));
+    const notes = recent.filter((f) => f.type === "note");
+    const dateMap = new Map<string, typeof recent>();
+    recent.forEach((f) => {
+      const d = f.shareDate;
+      if (!dateMap.has(d)) dateMap.set(d, []);
+      dateMap.get(d)!.push(f);
+    });
+    const dates = Array.from(dateMap.entries())
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([date, items]) => ({
+        date,
+        viewed: items.filter((i) => i.type === "viewed"),
+        notes: items.filter((i) => i.type === "note"),
+      }));
+    return { dates, totalViewed: viewedSet.size, totalNotes: notes.length };
+  }, [currentBabyId, getBabyFeedbacks]);
 
   const shareUrl = useMemo(() => {
     if (!baby || !currentBabyId) return "";
@@ -234,6 +261,68 @@ export default function FamilyShare() {
             <p className="text-xs text-gray-400 text-center pt-2 border-t border-gray-100 dark:border-night-200/10">
               🔒 只读模式 · 家人无法修改任何数据
             </p>
+          </div>
+        )}
+      </Card>
+
+      <Card>
+        <h3 className="section-title">
+          <MessageCircle size={20} className="text-primary-500" /> 家人反馈
+        </h3>
+
+        {feedbackGrouped.dates.length === 0 ? (
+          <div className="text-center py-6">
+            <p className="text-sm text-gray-400">暂无家人反馈，分享链接后家人可以在此留言</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-night-100">
+              <span className="flex items-center gap-1">
+                <Eye size={14} className="text-emerald-500" />
+                {feedbackGrouped.totalViewed}人已查看
+              </span>
+              <span className="flex items-center gap-1">
+                <MessageCircle size={14} className="text-primary-500" />
+                {feedbackGrouped.totalNotes}条留言
+              </span>
+            </div>
+
+            {feedbackGrouped.dates.map((group) => (
+              <div key={group.date} className="rounded-xl bg-gray-50 dark:bg-night-200/10 p-3">
+                <p className="text-xs font-medium text-gray-500 dark:text-night-100 mb-2">
+                  {formatDate(group.date)}
+                </p>
+                {group.viewed.length > 0 && (
+                  <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                    {group.viewed.map((v) => (
+                      <span
+                        key={v.id}
+                        className="inline-flex items-center gap-1 text-xs bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full"
+                      >
+                        <Eye size={12} />
+                        {v.visitorName}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {group.notes.map((n) => (
+                  <div
+                    key={n.id}
+                    className="flex items-start gap-2 mb-1.5 last:mb-0"
+                  >
+                    <MessageCircle size={14} className="text-primary-400 mt-0.5 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <span className="text-xs font-medium text-primary-600 dark:text-primary-400">
+                        {n.visitorName}
+                      </span>
+                      <p className="text-xs text-gray-600 dark:text-night-100 truncate">
+                        {n.content}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
           </div>
         )}
       </Card>

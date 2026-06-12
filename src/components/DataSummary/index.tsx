@@ -315,6 +315,7 @@ export default function DataSummary() {
               value={`${currentSummary.avgMilkPerDay}次`}
               sub={`总量 ${currentSummary.totalMilkAmount}ml`}
               color="pink"
+              diff={currentSummary.diff?.avgMilkPerDay}
             />
             <StatCard
               icon={TrendingUp}
@@ -322,6 +323,7 @@ export default function DataSummary() {
               value={`${currentSummary.avgSolidsPerDay}次`}
               sub={`${currentSummary.totalDays}天总计`}
               color="sky"
+              diff={currentSummary.diff?.avgSolidsPerDay}
             />
             <StatCard
               icon={BarChart3}
@@ -329,6 +331,7 @@ export default function DataSummary() {
               value={`${currentSummary.avgDiaperPerDay}次`}
               sub="护理统计"
               color="violet"
+              diff={currentSummary.diff?.avgDiaperPerDay}
             />
             <StatCard
               icon={Moon}
@@ -336,6 +339,8 @@ export default function DataSummary() {
               value={formatDuration(currentSummary.avgSleepPerDayMin)}
               sub={`总睡眠 ${formatDuration(currentSummary.totalSleepMin)}`}
               color="emerald"
+              diff={currentSummary.diff?.avgSleepPerDayMin}
+              diffUnit="min"
             />
             <StatCard
               icon={Sun}
@@ -350,6 +355,8 @@ export default function DataSummary() {
               value={`${currentSummary.completionRate}%`}
               sub={`${currentSummary.completedTodo}/${currentSummary.totalTodo} 已完成`}
               color="sky"
+              diff={currentSummary.diff?.completionRate}
+              diffUnit="%"
             />
           </div>
 
@@ -510,15 +517,27 @@ interface StatCardProps {
   sub?: string;
   color: "sky" | "pink" | "violet" | "emerald";
   clickable?: () => void;
+  diff?: number | null;
+  diffUnit?: string;
 }
 
-function StatCard({ icon: Icon, label, value, sub, color, clickable }: StatCardProps) {
+function StatCard({ icon: Icon, label, value, sub, color, clickable, diff, diffUnit = "次" }: StatCardProps) {
   const colorMap = {
     sky: "from-sky-50 to-sky-100 dark:from-sky-900/20 dark:to-sky-800/20 text-sky-600 dark:text-sky-300",
     pink: "from-pink-50 to-pink-100 dark:from-pink-900/20 dark:to-pink-800/20 text-pink-600 dark:text-pink-300",
     violet: "from-violet-50 to-violet-100 dark:from-violet-900/20 dark:to-violet-800/20 text-violet-600 dark:text-violet-300",
     emerald: "from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-800/20 text-emerald-600 dark:text-emerald-300",
   };
+  const diffDisplay = diff != null ? (
+    diff > 0 ? (
+      <span className="text-emerald-500">↑+{diffUnit === "min" ? Math.round(diff) + "min" : (Math.round(diff * 10) / 10) + diffUnit}</span>
+    ) : diff < 0 ? (
+      <span className="text-red-500">↓{diffUnit === "min" ? Math.round(diff) + "min" : (Math.round(diff * 10) / 10) + diffUnit}</span>
+    ) : (
+      <span className="text-gray-400">持平</span>
+    )
+  ) : null;
+
   return (
     <div
       onClick={clickable}
@@ -527,6 +546,12 @@ function StatCard({ icon: Icon, label, value, sub, color, clickable }: StatCardP
       <Icon size={18} className="opacity-80" />
       <p className="text-xs opacity-70 mt-1">{label}</p>
       <p className="text-xl font-bold mt-0.5">{value}</p>
+      {diffDisplay && (
+        <div className="flex items-center gap-1 mt-0.5">
+          <span className="text-[10px]">{diffDisplay}</span>
+          <span className="text-[10px] text-gray-400">vs上期</span>
+        </div>
+      )}
       {sub && <p className="text-[10px] opacity-60 mt-0.5">{sub}</p>}
     </div>
   );

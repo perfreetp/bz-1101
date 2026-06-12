@@ -29,6 +29,14 @@ export interface DailyStats {
   todoDone: number;
 }
 
+export interface PeriodDiff {
+  avgMilkPerDay: number | null;
+  avgSolidsPerDay: number | null;
+  avgDiaperPerDay: number | null;
+  avgSleepPerDayMin: number | null;
+  completionRate: number | null;
+}
+
 export interface PeriodSummary {
   startDate: string;
   endDate: string;
@@ -46,6 +54,7 @@ export interface PeriodSummary {
   growthStart?: GrowthRecord;
   growthEnd?: GrowthRecord;
   daily: DailyStats[];
+  diff?: PeriodDiff;
 }
 
 export function getDailyStats(
@@ -126,6 +135,31 @@ export function getPeriodSummary(
     (g) => g.date >= dates[0] && g.date <= dates[dates.length - 1]
   );
 
+  let diff: PeriodDiff | undefined;
+  const prevDates = getDateRange(days, dates[0]);
+  const prevEndDate = prevDates[prevDates.length - 1];
+  if (prevEndDate < dates[0]) {
+    const prevDaily = prevDates.map((d) => getDailyStats(d, feedings, diapers, sleeps, todos));
+    const prevTotalMilk = prevDaily.reduce((s, d) => s + d.milkCount, 0);
+    const prevTotalSolids = prevDaily.reduce((s, d) => s + d.solidsCount, 0);
+    const prevTotalDiaper = prevDaily.reduce((s, d) => s + d.diaperCount, 0);
+    const prevTotalSleep = prevDaily.reduce((s, d) => s + d.totalSleepMin, 0);
+    const prevTotalTodo = prevDaily.reduce((s, d) => s + d.todoTotal, 0);
+    const prevDoneTodo = prevDaily.reduce((s, d) => s + d.todoDone, 0);
+    const prevAvgMilk = Math.round((prevTotalMilk / days) * 10) / 10;
+    const prevAvgSolids = Math.round((prevTotalSolids / days) * 10) / 10;
+    const prevAvgDiaper = Math.round((prevTotalDiaper / days) * 10) / 10;
+    const prevAvgSleep = Math.round(prevTotalSleep / days);
+    const prevRate = prevTotalTodo > 0 ? Math.round((prevDoneTodo / prevTotalTodo) * 100) : 0;
+    diff = {
+      avgMilkPerDay: Math.round((totalMilk / days * 10 - prevAvgMilk * 10)) / 10,
+      avgSolidsPerDay: Math.round((totalSolids / days * 10 - prevAvgSolids * 10)) / 10,
+      avgDiaperPerDay: Math.round((totalDiaper / days * 10 - prevAvgDiaper * 10)) / 10,
+      avgSleepPerDayMin: Math.round(totalSleep / days) - prevAvgSleep,
+      completionRate: (totalTodo > 0 ? Math.round((doneTodo / totalTodo) * 100) : 0) - prevRate,
+    };
+  }
+
   return {
     startDate: dates[0],
     endDate: dates[dates.length - 1],
@@ -143,5 +177,6 @@ export function getPeriodSummary(
     growthStart: periodGrowth[0],
     growthEnd: periodGrowth[periodGrowth.length - 1],
     daily,
+    diff,
   };
 }

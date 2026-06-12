@@ -5,6 +5,7 @@ import Button from "@/components/common/Button";
 import Modal from "@/components/common/Modal";
 import { useBabyStore } from "@/store/baby";
 import { useVaccineStore } from "@/store/vaccine";
+import { useTodoStore } from "@/store/todo";
 import { cn } from "@/lib/utils";
 import { todayStr, formatDate } from "@/utils/date";
 import type { VaccineItem, VaccineType } from "@/types";
@@ -16,6 +17,7 @@ interface Props {
 export default function VaccineManager({ compact = false }: Props) {
   const { currentBabyId } = useBabyStore();
   const { getBabyVaccines, getUpcoming, addVaccine, updateVaccine, completeVaccine, uncompleteVaccine, deleteVaccine } = useVaccineStore();
+  const { addTodo, todos, deleteTodo } = useTodoStore();
 
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<VaccineItem | null>(null);
@@ -79,6 +81,40 @@ export default function VaccineManager({ compact = false }: Props) {
 
   function getDaysLeft(dateStr: string): number {
     return Math.ceil((new Date(dateStr).getTime() - Date.now()) / (24 * 60 * 60 * 1000));
+  }
+
+  function handleComplete(v: VaccineItem) {
+    if (!currentBabyId) return;
+    completeVaccine(v.id);
+    const cat = v.type === "vaccine" ? "vaccine" : "checkup";
+    const existing = todos.find(
+      (t) => t.babyId === currentBabyId && t.vaccineId === v.id
+    );
+    if (existing) {
+      useTodoStore.getState().toggleTodo(existing.id);
+    } else {
+      addTodo({
+        babyId: currentBabyId,
+        title: v.name,
+        date: todayStr(),
+        category: cat,
+        completed: true,
+        vaccineId: v.id,
+      });
+    }
+  }
+
+  function handleUncomplete(v: VaccineItem) {
+    if (!currentBabyId) return;
+    uncompleteVaccine(v.id);
+    const existing = todos.find(
+      (t) => t.babyId === currentBabyId && t.vaccineId === v.id
+    );
+    if (existing) {
+      if (existing.completed) {
+        useTodoStore.getState().toggleTodo(existing.id);
+      }
+    }
   }
 
   if (compact) {
@@ -178,7 +214,7 @@ export default function VaccineManager({ compact = false }: Props) {
               >
                 <div className="flex items-start gap-3">
                   <button
-                    onClick={() => v.completedDate ? uncompleteVaccine(v.id) : completeVaccine(v.id)}
+                    onClick={() => v.completedDate ? handleUncomplete(v) : handleComplete(v)}
                     className={cn(
                       "w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all",
                       v.completedDate

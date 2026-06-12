@@ -54,6 +54,7 @@ export interface TodoItem {
   completed: boolean;
   date: string;
   category: "vaccine" | "checkup" | "shopping" | "other";
+  vaccineId?: string;
 }
 
 export type VaccineType = "vaccine" | "checkup";

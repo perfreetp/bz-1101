@@ -1,4 +1,4 @@
-import { format, differenceInMonths, differenceInDays, differenceInHours, differenceInMinutes, parseISO } from "date-fns";
+import { format, differenceInMonths, differenceInDays, differenceInHours, differenceInMinutes, parseISO, addDays, subDays, startOfDay, endOfDay } from "date-fns";
 import { zhCN } from "date-fns/locale";
 
 export function formatDate(date: Date | string, pattern = "yyyy-MM-dd"): string {
@@ -103,4 +103,31 @@ export function getHoursMinutes(start: string, end: string): { hours: number; mi
     hours: Math.floor(total / 60),
     minutes: total % 60,
   };
+}
+
+export function getDateRange(days: number, endDate: string = todayStr()): string[] {
+  const dates: string[] = [];
+  const end = parseISO(endDate);
+  for (let i = days - 1; i >= 0; i--) {
+    dates.push(format(subDays(end, i), "yyyy-MM-dd"));
+  }
+  return dates;
+}
+
+export function isNightSleep(startTime: string, endTime: string | null): boolean {
+  const startHour = parseISO(startTime).getHours();
+  if (startHour >= 20 || startHour < 6) return true;
+  if (endTime) {
+    const endHour = parseISO(endTime).getHours();
+    if (endHour >= 0 && endHour < 8) return true;
+  }
+  return false;
+}
+
+export function getDayStart(dateStr: string): number {
+  return startOfDay(parseISO(dateStr)).getTime();
+}
+
+export function getDayEnd(dateStr: string): number {
+  return endOfDay(parseISO(dateStr)).getTime();
 }

@@ -1,5 +1,15 @@
-import React, { useState, useEffect } from "react";
-import { Moon, Play, Square, Plus, Trash2, Clock } from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import { Moon, Play, Square, Plus, Trash2, Clock, TrendingUp } from "lucide-react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
 import Card from "@/components/common/Card";
 import Button from "@/components/common/Button";
 import Modal from "@/components/common/Modal";
@@ -11,6 +21,10 @@ import {
   formatDuration,
   calculateDuration,
   getHoursMinutes,
+  getDateRange,
+  isOverlappingDate,
+  isNightSleep,
+  formatDate,
 } from "@/utils/date";
 import { cn } from "@/lib/utils";
 import type { SleepRecord } from "@/types";
@@ -42,6 +56,52 @@ export default function SleepRecord() {
   const sleeps = viewAll ? allSleeps : todaySleeps;
   const totalMinutes = currentBabyId ? getTodayTotalMinutes(currentBabyId) : 0;
   const activeSleep = allSleeps.find((s) => s.id === activeSleepId);
+
+  const sleepTrendData = useMemo(() => {
+    if (!currentBabyId) return [];
+    const dates = getDateRange(7);
+    return dates.map((dateStr) => {
+      const daySleeps = allSleeps.filter((s) =>
+        isOverlappingDate(s.startTime, s.endTime, dateStr)
+      );
+      let totalSleepMin = 0;
+      let nightSleepMin = 0;
+      daySleeps.forEach((s) => {
+        const end = s.endTime || new Date().toISOString();
+        const dayStart = new Date(`${dateStr}T00:00:00`).getTime();
+        const dayEnd = new Date(`${dateStr}T23:59:59.999`).getTime();
+        const sStart = Math.max(new Date(s.startTime).getTime(), dayStart);
+        const sEnd = Math.min(new Date(end).getTime(), dayEnd);
+        const overlapMin = Math.max(0, Math.floor((sEnd - sStart) / 60000));
+        totalSleepMin += overlapMin;
+        if (isNightSleep(s.startTime, s.endTime)) {
+          nightSleepMin += overlapMin;
+        }
+      });
+      return {
+        date: dateStr,
+        dateLabel: formatDate(dateStr, "MM/dd"),
+        totalSleep: Math.round((totalSleepMin / 60) * 10) / 10,
+        nightSleep: Math.round((nightSleepMin / 60) * 10) / 10,
+        totalSleepMin,
+        nightSleepMin,
+      };
+    });
+  }, [allSleeps, currentBabyId]);
+
+  const trendSummary = useMemo(() => {
+    if (sleepTrendData.length === 0) {
+      return { avgSleep: 0, totalSleep: 0, avgNightSleep: 0, totalNightSleep: 0 };
+    }
+    const totalMin = sleepTrendData.reduce((s, d) => s + d.totalSleepMin, 0);
+    const totalNightMin = sleepTrendData.reduce((s, d) => s + d.nightSleepMin, 0);
+    return {
+      avgSleep: Math.round(totalMin / sleepTrendData.length),
+      totalSleep: totalMin,
+      avgNightSleep: Math.round(totalNightMin / sleepTrendData.length),
+      totalNightSleep: totalNightMin,
+    };
+  }, [sleepTrendData]);
 
   useEffect(() => {
     if (activeSleep) {
@@ -167,6 +227,87 @@ export default function SleepRecord() {
               </div>
             </button>
           )}
+        </div>
+      </Card>
+
+      <Card>
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-8 h-8 rounded-full bg-pink-100 dark:bg-pink-400/20 flex items-center justify-center">
+            <TrendingUp size={16} className="text-pink-500" />
+          </div>
+          <h3 className="section-title mb-0">近7天睡眠趋势</h3>
+        </div>
+
+        <div className="h-56 mb-4">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={sleepTrendData} margin={{ top: 5, right: 5, left: -10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f3e8ff" />
+              <XAxis
+                dataKey="dateLabel"
+                tick={{ fontSize: 11, fill: "#9ca3af" }}
+                axisLine={{ stroke: "#e5e7eb" }}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fontSize: 11, fill: "#9ca3af" }}
+                axisLine={{ stroke: "#e5e7eb" }}
+                tickLine={false}
+                unit="h"
+                width={35}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "white",
+                  borderRadius: "12px",
+                  border: "none",
+                  boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+                  fontSize: "12px",
+                }}
+                formatter={(value: number, name: string) => [
+                  `${value}小时`,
+                  name === "totalSleep" ? "总睡眠" : "夜间睡眠",
+                ]}
+                labelFormatter={(label) => `${label}`}
+              />
+              <Legend
+                wrapperStyle={{ fontSize: "12px" }}
+                formatter={(value) =>
+                  value === "totalSleep" ? "总睡眠" : "夜间睡眠"
+                }
+              />
+              <Line
+                type="monotone"
+                dataKey="totalSleep"
+                stroke="#ec4899"
+                strokeWidth={2.5}
+                dot={{ fill: "#ec4899", r: 3 }}
+                activeDot={{ r: 5, fill: "#ec4899" }}
+              />
+              <Line
+                type="monotone"
+                dataKey="nightSleep"
+                stroke="#7c3aed"
+                strokeWidth={2.5}
+                dot={{ fill: "#7c3aed", r: 3 }}
+                activeDot={{ r: 5, fill: "#7c3aed" }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-pink-50 dark:bg-pink-400/10 rounded-xl p-3 text-center">
+            <p className="text-xs text-pink-500 dark:text-pink-300 mb-1">7天平均睡眠</p>
+            <p className="text-lg font-bold text-pink-600 dark:text-pink-200">
+              {formatDuration(trendSummary.avgSleep)}
+            </p>
+          </div>
+          <div className="bg-violet-50 dark:bg-violet-400/10 rounded-xl p-3 text-center">
+            <p className="text-xs text-violet-500 dark:text-violet-300 mb-1">7天总睡眠</p>
+            <p className="text-lg font-bold text-violet-600 dark:text-violet-200">
+              {formatDuration(trendSummary.totalSleep)}
+            </p>
+          </div>
         </div>
       </Card>
 

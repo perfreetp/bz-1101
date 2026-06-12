@@ -1,4 +1,5 @@
 import { formatDate, formatDateTime, formatDuration } from "./date";
+import type { PeriodSummary } from "./stats";
 
 interface DiaryData {
   babyName: string;
@@ -92,4 +93,58 @@ export function downloadText(content: string, filename: string): void {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+export function exportPeriodReport(
+  summary: PeriodSummary,
+  babyName: string,
+  periodLabel: string
+): string {
+  const lines: string[] = [];
+  lines.push(`=== ${babyName} 的${periodLabel}报告 ===`);
+  lines.push(`周期：${formatDate(summary.startDate, "yyyy年MM月dd日")} 至 ${formatDate(summary.endDate, "yyyy年MM月dd日")}`);
+  lines.push(`共 ${summary.totalDays} 天`);
+  lines.push("");
+
+  lines.push("【喂养概况】");
+  lines.push(`  平均每日喂奶次数：${summary.avgMilkPerDay} 次`);
+  lines.push(`  喂奶总量：${summary.totalMilkAmount}ml`);
+  lines.push(`  平均每日辅食次数：${summary.avgSolidsPerDay} 次`);
+  lines.push("");
+
+  lines.push("【护理概况】");
+  lines.push(`  平均每日换尿布次数：${summary.avgDiaperPerDay} 次`);
+  lines.push("");
+
+  lines.push("【睡眠概况】");
+  lines.push(`  平均每日睡眠时长：${formatDuration(summary.avgSleepPerDayMin)}`);
+  lines.push(`  总睡眠时长：${formatDuration(summary.totalSleepMin)}`);
+  lines.push(`  夜间睡眠总时长：${formatDuration(summary.nightSleepMin)}`);
+  lines.push("");
+
+  lines.push("【待办概况】");
+  lines.push(`  待办完成总数：${summary.completedTodo}/${summary.totalTodo}`);
+  lines.push(`  完成率：${summary.completionRate}%`);
+  lines.push("");
+
+  if (summary.growthStart && summary.growthEnd) {
+    lines.push("【生长变化】");
+    const heightDiff = summary.growthEnd.height - summary.growthStart.height;
+    const weightDiff = summary.growthEnd.weight - summary.growthStart.weight;
+    lines.push(`  身高变化：${summary.growthStart.height}cm → ${summary.growthEnd.height}cm（${heightDiff >= 0 ? "+" : ""}${heightDiff}cm）`);
+    lines.push(`  体重变化：${summary.growthStart.weight}kg → ${summary.growthEnd.weight}kg（${weightDiff >= 0 ? "+" : ""}${weightDiff}kg）`);
+    lines.push("");
+  }
+
+  lines.push("【每日明细】");
+  summary.daily.forEach((d) => {
+    lines.push(`  ${formatDate(d.date, "MM月dd日")}：`);
+    lines.push(`    喂奶 ${d.milkCount} 次（${d.milkAmount}ml），辅食 ${d.solidsCount} 次`);
+    lines.push(`    换尿布 ${d.diaperCount} 次，睡眠 ${formatDuration(d.totalSleepMin)}`);
+    lines.push(`    待办 ${d.todoDone}/${d.todoTotal}`);
+  });
+  lines.push("");
+
+  lines.push("—— 记录于宝妈育儿助手 ——");
+  return lines.join("\n");
 }

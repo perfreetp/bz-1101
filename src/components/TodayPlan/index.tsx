@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Plus, Check, Trash2, Syringe, Stethoscope, ShoppingBag, Sparkles, CalendarCheck2 } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import { Plus, Check, Trash2, Syringe, Stethoscope, ShoppingBag, Sparkles, CalendarCheck2, AlertCircle } from "lucide-react";
 import Card from "@/components/common/Card";
 import Button from "@/components/common/Button";
 import Modal from "@/components/common/Modal";
@@ -8,9 +8,10 @@ import { useBabyStore } from "@/store/baby";
 import { useTodoStore } from "@/store/todo";
 import { useFeedingStore } from "@/store/feeding";
 import { useSleepStore } from "@/store/sleep";
+import { useVaccineStore } from "@/store/vaccine";
 import { cn } from "@/lib/utils";
-import { formatDateTime } from "@/utils/date";
-import type { TodoItem } from "@/types";
+import { formatDateTime, todayStr } from "@/utils/date";
+import type { TodoItem, VaccineItem } from "@/types";
 
 const categoryIcons: Record<TodoItem["category"], typeof Sparkles> = {
   vaccine: Syringe,
@@ -28,19 +29,42 @@ const categoryLabels: Record<TodoItem["category"], string> = {
 
 export default function TodayPlan() {
   const { currentBabyId, getCurrentBaby } = useBabyStore();
-  const { getTodayTodos, toggleTodo, addTodo, deleteTodo } = useTodoStore();
+  const { getTodayTodos, toggleTodo, addTodo, deleteTodo, todos: allTodos } = useTodoStore();
   const { getTodayFeedings, getTodayDiapers } = useFeedingStore();
   const { getTodaySleeps } = useSleepStore();
+  const { getUpcoming, completeVaccine } = useVaccineStore();
 
   const [showAdd, setShowAdd] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newCategory, setNewCategory] = useState<TodoItem["category"]>("other");
 
-  const todos = currentBabyId ? getTodayTodos(currentBabyId) : [];
+  const todayTodos = currentBabyId ? getTodayTodos(currentBabyId) : [];
   const feedings = currentBabyId ? getTodayFeedings(currentBabyId) : [];
   const diapers = currentBabyId ? getTodayDiapers(currentBabyId) : [];
   const sleeps = currentBabyId ? getTodaySleeps(currentBabyId) : [];
   const baby = getCurrentBaby();
+
+  const upcomingVaccines = useMemo(() => {
+    if (!currentBabyId) return [];
+    const upcoming = getUpcoming(currentBabyId, 3);
+    return upcoming.filter(
+      (v) => !allTodos.some((t) => t.babyId === currentBabyId && t.vaccineId === v.id)
+    );
+  }, [currentBabyId, getUpcoming, allTodos]);
+
+  function handleCompleteVaccine(v: VaccineItem) {
+    if (!currentBabyId) return;
+    completeVaccine(v.id);
+    const cat = v.type === "vaccine" ? "vaccine" : "checkup";
+    addTodo({
+      babyId: currentBabyId,
+      title: v.name,
+      date: todayStr(),
+      category: cat,
+      completed: true,
+      vaccineId: v.id,
+    });
+  }
 
   function handleAddTodo(e: React.FormEvent) {
     e.preventDefault();
@@ -65,7 +89,7 @@ export default function TodayPlan() {
         <StatCard label="今日喂奶" value={feedings.filter((f) => f.type === "milk").length.toString()} unit="次" color="pink" />
         <StatCard label="今日辅食" value={feedings.filter((f) => f.type === "solids").length.toString()} unit="次" color="mint" />
         <StatCard label="换尿布" value={diapers.length.toString()} unit="次" color="peach" />
-        <StatCard label="已完成待办" value={`${todos.filter((t) => t.completed).length}/${todos.length}`} unit="" color="lavender" />
+        <StatCard label="已完成待办" value={`${todayTodos.filter((t) => t.completed).length}/${todayTodos.length}`} unit="" color="lavender" />
       </div>
 
       <Card>
@@ -78,11 +102,41 @@ export default function TodayPlan() {
           </Button>
         </div>
 
-        {todos.length === 0 ? (
+        {todayTodos.length === 0 && upcomingVaccines.length === 0 ? (
           <p className="text-center text-gray-400 py-6 text-sm">暂无待办，点击上方按钮添加</p>
         ) : (
           <div className="space-y-2">
-            {todos.map((todo) => {
+            {upcomingVaccines.map((v) => {
+              const days = Math.ceil(
+                (new Date(v.plannedDate).getTime() - Date.now()) / (24 * 60 * 60 * 1000)
+              );
+              const isToday = days <= 0;
+              const CatIcon = v.type === "vaccine" ? Syringe : Stethoscope;
+              return (
+                <div
+                  key={v.id}
+                  className="flex items-center gap-3 p-3 rounded-xl bg-orange-50 dark:bg-orange-400/10 transition-all"
+                >
+                  <button
+                    onClick={() => handleCompleteVaccine(v)}
+                    className="w-6 h-6 rounded-full border-2 border-orange-400 flex items-center justify-center transition-all flex-shrink-0 hover:bg-orange-100 dark:hover:bg-orange-400/20"
+                    title="点击标记已完成"
+                  >
+                    <Check size={14} strokeWidth={3} className="text-transparent" />
+                  </button>
+                  <CatIcon size={16} className="text-orange-500 flex-shrink-0" />
+                  <span className="flex-1 text-sm text-gray-700 dark:text-night-50">
+                    {v.name}
+                  </span>
+                  <span className="text-xs text-orange-500 px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-400/20 flex items-center gap-1">
+                    <AlertCircle size={10} />
+                    {isToday ? "今日提醒" : `${days}天后`}
+                  </span>
+                </div>
+              );
+            })}
+
+            {todayTodos.map((todo) => {
               const CatIcon = categoryIcons[todo.category];
               return (
                 <div
